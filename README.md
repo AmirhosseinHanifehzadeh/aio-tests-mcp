@@ -1,5 +1,6 @@
 # AIO Tests MCP Server
 
+[![CI](https://github.com/AmirhosseinHanifehzadeh/aio-tests-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/AmirhosseinHanifehzadeh/aio-tests-mcp/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
 [![MCP](https://img.shields.io/badge/MCP-compatible-8A2BE2.svg)](https://modelcontextprotocol.io)
