@@ -1,0 +1,36 @@
+name: Bug report
+description: Something is not working
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: dropdown
+    id: deployment
+    attributes:
+      label: Deployment
+      options:
+        - Jira Cloud
+        - Jira Server / Data Center
+    validations:
+      required: true
+  - type: input
+    id: tool
+    attributes:
+      label: Which tool failed?
+      placeholder: aio_search_test_cases
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Output of `aio-tests-mcp --version`
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Output with `MCP_VERBOSE=true`, with tokens redacted.
+      render: shell

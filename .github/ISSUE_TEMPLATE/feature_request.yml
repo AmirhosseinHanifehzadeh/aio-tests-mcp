@@ -1,0 +1,15 @@
+name: Feature request
+description: Suggest a tool or capability
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would you like the server to do?
+      description: If it maps to an AIO Tests API endpoint, please link the docs.
