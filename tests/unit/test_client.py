@@ -5,9 +5,9 @@ from unittest.mock import MagicMock
 import pytest
 import requests
 
-from aio_tests_mcp.client import AIOApiError, AIOClient
-from aio_tests_mcp.config import AIOConfig
-from aio_tests_mcp.exceptions import AIOAuthenticationError
+from aio_tests_mcp_server.client import AIOApiError, AIOClient
+from aio_tests_mcp_server.config import AIOConfig
+from aio_tests_mcp_server.exceptions import AIOAuthenticationError
 
 
 def make_response(

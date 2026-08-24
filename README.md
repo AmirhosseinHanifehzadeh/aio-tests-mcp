@@ -1,3 +1,5 @@
+<!-- mcp-name: io.github.AmirhosseinHanifehzadeh/aio-tests-mcp -->
+
 # AIO Tests MCP Server
 
 [![CI](https://github.com/AmirhosseinHanifehzadeh/aio-tests-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/AmirhosseinHanifehzadeh/aio-tests-mcp/actions/workflows/ci.yml)
@@ -5,20 +7,29 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
 [![MCP](https://img.shields.io/badge/MCP-compatible-8A2BE2.svg)](https://modelcontextprotocol.io)
 
-An open-source [Model Context Protocol](https://modelcontextprotocol.io) server for
-**[AIO Tests](https://www.aiotests.com/)**, the test management app for Jira.
+**An open-source [MCP server](https://modelcontextprotocol.io) for
+[AIO Tests](https://www.aiotests.com/) — test management for Jira.**
 
-It lets Claude, Cursor, VS Code, Windsurf and any other MCP client work with your real
-test data: search and read test cases, inspect a project's field schema, browse the folder
-tree, and create or update cases — Classic *and* BDD — without leaving the conversation.
+Connect Claude, Claude Code, Cursor, VS Code, Windsurf or any other MCP client to your
+Jira test cases. Search and read them, inspect a project's field schema, browse the folder
+tree, and create or update cases — Classic *and* BDD — in plain conversation.
 
-Runs on **Jira Cloud and Server/Data Center**, self-hosted, with your credentials staying
-on your machine.
+Works with **Jira Cloud and Jira Server / Data Center**. Self-hosted, so your credentials
+and test data never leave your infrastructure.
+
+```bash
+uvx aio-tests-mcp-server
+```
+
+> **Not on PyPI yet.** The `uvx` command above goes live with the first release.
+> Until then, use [Running from source](#running-from-source) — it takes two commands.
 
 > **Why this exists.** The official AIO Tests MCP server is a closed-source, remotely
-> hosted service with a tenant-specific URL and Cloud-only support. This is a
-> self-hostable alternative you can read, audit, fork and run in your own network —
-> including on Jira Server/Data Center.
+> hosted service with a tenant-specific URL and Cloud-only support. This one is
+> self-hostable and auditable — you can read every line, fork it, and run it inside your
+> own network. It is, as far as I know, the only AIO Tests MCP server that supports
+> **Jira Server / Data Center**, and it has a **read-only mode** so you can safely point
+> an AI at a production instance.
 
 ---
 
@@ -69,7 +80,7 @@ reuses your Jira credentials (a Personal Access Token, or username + password).
   "mcpServers": {
     "aio-tests": {
       "command": "uvx",
-      "args": ["aio-tests-mcp"],
+      "args": ["aio-tests-mcp-server"],
       "env": {
         "AIO_API_TOKEN": "your_aio_access_token"
       }
@@ -87,7 +98,7 @@ reuses your Jira credentials (a Personal Access Token, or username + password).
   "mcpServers": {
     "aio-tests": {
       "command": "uvx",
-      "args": ["aio-tests-mcp"],
+      "args": ["aio-tests-mcp-server"],
       "env": {
         "AIO_ENABLED": "true",
         "JIRA_URL": "https://jira.your-company.com",
@@ -109,7 +120,7 @@ Same JSON as above, in the client's MCP settings file (`~/.cursor/mcp.json` for 
 In Claude Code you can add it in one command:
 
 ```bash
-claude mcp add aio-tests --env AIO_API_TOKEN=your_token -- uvx aio-tests-mcp
+claude mcp add aio-tests --env AIO_API_TOKEN=your_token -- uvx aio-tests-mcp-server
 ```
 
 ### 3. Ask for something
@@ -142,7 +153,7 @@ client certificates and custom headers are supported too.
 The same options are available as CLI flags:
 
 ```bash
-uvx aio-tests-mcp --help
+uvx aio-tests-mcp-server --help
 ```
 
 ### Read-only mode
@@ -150,7 +161,7 @@ uvx aio-tests-mcp --help
 Point an AI at a production Jira and you probably want it looking, not touching:
 
 ```bash
-uvx aio-tests-mcp --read-only
+uvx aio-tests-mcp-server --read-only
 ```
 
 Write tools are then hidden from the tool list entirely, so the model never sees them.
@@ -162,7 +173,7 @@ Write tools are then hidden from the tool list entirely, so the model never sees
 For shared or containerised deployments, run it over Streamable HTTP instead of stdio:
 
 ```bash
-uvx aio-tests-mcp --transport streamable-http --port 8000
+uvx aio-tests-mcp-server --transport streamable-http --port 8000
 ```
 
 The server exposes `/mcp` and a `/healthz` endpoint for Kubernetes probes.
@@ -196,7 +207,7 @@ git clone https://github.com/AmirhosseinHanifehzadeh/aio-tests-mcp.git
 cd aio-tests-mcp
 uv sync
 cp .env.example .env   # then fill it in
-uv run aio-tests-mcp
+uv run aio-tests-mcp-server
 ```
 
 Run the tests:
@@ -213,6 +224,42 @@ uv run pytest
   exposes no endpoint for them.
 - **Test cycles and test runs are not covered yet.** The current tool set is scoped to
   test case management — cases, folders, tags and project schema. Contributions welcome.
+
+---
+
+## FAQ
+
+**Is this the official AIO Tests MCP server?**
+No. AIO Tests publishes its own MCP server as a hosted service — closed source, with a
+tenant-specific URL, and Cloud only. This is an independent, open-source implementation
+you run yourself. It is not affiliated with or endorsed by AIO Tests or Atlassian.
+
+**Does it work with Jira Data Center or Jira Server?**
+Yes. Set `AIO_ENABLED=true` and `JIRA_URL`, and authenticate with a Jira Personal Access
+Token or username and password. On Server/DC the AIO Tests API is served from your Jira
+base URL, so it reuses your Jira credentials. This is the main reason to pick this server
+over the alternatives — the hosted ones are Cloud-only.
+
+**Can I use it with Claude Code, Claude Desktop, Cursor or VS Code?**
+Yes — any MCP client works. See [Add it to your MCP client](#2-add-it-to-your-mcp-client)
+for ready-to-paste config.
+
+**Is it safe to point at production Jira?**
+Run it with `--read-only` (or `READ_ONLY_MODE=true`). Write tools are then filtered out of
+the tool list entirely, so the model never sees that creating or updating is an option.
+
+**Where do my credentials go?**
+Nowhere but your own machine and your Jira instance. The server runs locally over stdio by
+default and talks straight to the AIO Tests REST API. There is no intermediary service.
+
+**Can one server instance serve a whole team?**
+Yes — run it over HTTP and have each client send its own token in the `X-Aio-Api-Token`
+header. See [Multi-tenant use](#multi-tenant-use).
+
+**Does it support test cycles, executions or attachments?**
+Not yet. The current tool set covers test case management — cases, folders, tags and
+project schema. Cycles and executions are the obvious next step; see
+[Limitations](#limitations), and issues are welcome.
 
 ---
 

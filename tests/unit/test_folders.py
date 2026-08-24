@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from aio_tests_mcp.folders import normalize_folder_path
+from aio_tests_mcp_server.folders import normalize_folder_path
 from tests.fixtures.aio_mocks import MOCK_AIO_FOLDER_DETAILS, MOCK_AIO_FOLDER_TREE
 
 

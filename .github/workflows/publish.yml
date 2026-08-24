@@ -22,5 +22,19 @@ jobs:
       - name: Build distributions
         run: uv build
 
-      - name: Publish
+      - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
+
+  registry:
+    # Lists the server in the official MCP registry so MCP clients can find it.
+    # Runs after PyPI, because the registry verifies the published package.
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Publish to the MCP registry
+        uses: modelcontextprotocol/registry/.github/actions/publish@main

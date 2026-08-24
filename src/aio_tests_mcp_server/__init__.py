@@ -19,7 +19,7 @@ from .utils.lifecycle import ensure_clean_exit, setup_signal_handlers  # noqa: E
 from .utils.logging import setup_logging  # noqa: E402
 
 try:
-    __version__ = version("aio-tests-mcp")
+    __version__ = version("aio-tests-mcp-server")
 except PackageNotFoundError:
     __version__ = "0.0.0"
 
@@ -28,7 +28,7 @@ logging_stream = sys.stdout if is_env_truthy("MCP_LOGGING_STDOUT") else sys.stde
 logger = setup_logging(logging_level, logging_stream)
 
 
-@click.version_option(__version__, prog_name="aio-tests-mcp")
+@click.version_option(__version__, prog_name="aio-tests-mcp-server")
 @click.command()
 @click.option("-v", "--verbose", count=True, help="Increase verbosity (repeatable).")
 @click.option(

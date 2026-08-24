@@ -23,5 +23,5 @@ ENV PATH="/app/.venv/bin:$PATH"
 USER app
 EXPOSE 8000
 
-ENTRYPOINT ["aio-tests-mcp"]
+ENTRYPOINT ["aio-tests-mcp-server"]
 CMD ["--transport", "streamable-http", "--host", "0.0.0.0", "--port", "8000"]

@@ -23,12 +23,12 @@ uv run ruff format .   # format
 
 | Path | What lives there |
 | --- | --- |
-| `src/aio_tests_mcp/server.py` | The FastMCP tool definitions — one function per MCP tool |
-| `src/aio_tests_mcp/app.py` | Server composition: lifespan, tool filtering, HTTP middleware |
-| `src/aio_tests_mcp/client.py` | The HTTP client for the AIO Tests REST API |
-| `src/aio_tests_mcp/config.py` | Credential and URL resolution from the environment |
-| `src/aio_tests_mcp/{cases,folders,projects,tags}.py` | API mixins, composed into `AIOFetcher` |
-| `src/aio_tests_mcp/models/` | Pydantic models that parse API payloads and render tool output |
+| `src/aio_tests_mcp_server/server.py` | The FastMCP tool definitions — one function per MCP tool |
+| `src/aio_tests_mcp_server/app.py` | Server composition: lifespan, tool filtering, HTTP middleware |
+| `src/aio_tests_mcp_server/client.py` | The HTTP client for the AIO Tests REST API |
+| `src/aio_tests_mcp_server/config.py` | Credential and URL resolution from the environment |
+| `src/aio_tests_mcp_server/{cases,folders,projects,tags}.py` | API mixins, composed into `AIOFetcher` |
+| `src/aio_tests_mcp_server/models/` | Pydantic models that parse API payloads and render tool output |
 | `tests/` | Unit tests — no network access, everything mocked |
 
 ## Conventions

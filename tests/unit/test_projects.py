@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from aio_tests_mcp.client import AIOApiError
+from aio_tests_mcp_server.client import AIOApiError
 from tests.fixtures.aio_mocks import MOCK_AIO_PROJECT_CONFIG
 
 

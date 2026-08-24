@@ -4,8 +4,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from aio_tests_mcp.config import AIOConfig
-from aio_tests_mcp.fetcher import AIOFetcher
+from aio_tests_mcp_server.config import AIOConfig
+from aio_tests_mcp_server.fetcher import AIOFetcher
 
 
 @pytest.fixture

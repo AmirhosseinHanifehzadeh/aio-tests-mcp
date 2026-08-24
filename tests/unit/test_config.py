@@ -5,8 +5,8 @@ from unittest.mock import patch
 
 import pytest
 
-from aio_tests_mcp.config import AIOConfig, is_aio_enabled
-from aio_tests_mcp.constants import AIO_CLOUD_API_BASE
+from aio_tests_mcp_server.config import AIOConfig, is_aio_enabled
+from aio_tests_mcp_server.constants import AIO_CLOUD_API_BASE
 
 
 class TestAIOConfigFromEnv:

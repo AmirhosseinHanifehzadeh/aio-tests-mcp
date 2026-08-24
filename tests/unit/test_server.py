@@ -12,11 +12,11 @@ from fastmcp.client import FastMCPTransport
 from fastmcp.exceptions import ToolError
 from starlette.requests import Request
 
-from aio_tests_mcp.app import AIOTestsMCP
-from aio_tests_mcp.config import AIOConfig
-from aio_tests_mcp.context import AppContext
-from aio_tests_mcp.fetcher import AIOFetcher
-from aio_tests_mcp.models import (
+from aio_tests_mcp_server.app import AIOTestsMCP
+from aio_tests_mcp_server.config import AIOConfig
+from aio_tests_mcp_server.context import AppContext
+from aio_tests_mcp_server.fetcher import AIOFetcher
+from aio_tests_mcp_server.models import (
     AIOFolder,
     AIOFolderTree,
     AIOProject,
@@ -117,7 +117,7 @@ def _build_test_mcp(aio_config: AIOConfig | None, read_only: bool) -> AIOTestsMC
     test_mcp = AIOTestsMCP(
         "TestAIO", instructions="Test AIO Tests MCP Server", lifespan=test_lifespan
     )
-    from aio_tests_mcp.server import aio_mcp
+    from aio_tests_mcp_server.server import aio_mcp
 
     test_mcp.mount(aio_mcp, prefix="aio")
     return test_mcp
@@ -156,11 +156,11 @@ async def aio_client(test_aio_mcp, mock_aio_fetcher, mock_request):
     """Create a FastMCP client with a mocked AIO Tests fetcher."""
     with (
         patch(
-            "aio_tests_mcp.server.get_aio_fetcher",
+            "aio_tests_mcp_server.server.get_aio_fetcher",
             AsyncMock(return_value=mock_aio_fetcher),
         ),
         patch(
-            "aio_tests_mcp.dependencies.get_http_request",
+            "aio_tests_mcp_server.dependencies.get_http_request",
             return_value=mock_request,
         ),
     ):
@@ -173,11 +173,11 @@ async def read_only_client(read_only_aio_mcp, mock_aio_fetcher, mock_request):
     """Create a FastMCP client against the read-only server."""
     with (
         patch(
-            "aio_tests_mcp.server.get_aio_fetcher",
+            "aio_tests_mcp_server.server.get_aio_fetcher",
             AsyncMock(return_value=mock_aio_fetcher),
         ),
         patch(
-            "aio_tests_mcp.dependencies.get_http_request",
+            "aio_tests_mcp_server.dependencies.get_http_request",
             return_value=mock_request,
         ),
     ):
@@ -494,7 +494,7 @@ async def test_write_tools_blocked_in_read_only_mode(
 async def test_tools_are_listed_when_configured(test_aio_mcp, mock_request):
     """Every AIO Tests tool is advertised when the service is configured."""
     with patch(
-        "aio_tests_mcp.dependencies.get_http_request",
+        "aio_tests_mcp_server.dependencies.get_http_request",
         return_value=mock_request,
     ):
         async with Client(transport=FastMCPTransport(test_aio_mcp)) as client:
@@ -519,7 +519,7 @@ async def test_tools_are_listed_when_configured(test_aio_mcp, mock_request):
 async def test_write_tools_hidden_in_read_only_mode(read_only_aio_mcp, mock_request):
     """Read-only mode hides the write tools from the listing."""
     with patch(
-        "aio_tests_mcp.dependencies.get_http_request",
+        "aio_tests_mcp_server.dependencies.get_http_request",
         return_value=mock_request,
     ):
         async with Client(transport=FastMCPTransport(read_only_aio_mcp)) as client:
@@ -536,7 +536,7 @@ async def test_write_tools_hidden_in_read_only_mode(read_only_aio_mcp, mock_requ
 async def test_tools_hidden_when_not_configured(unconfigured_aio_mcp, mock_request):
     """Without an AIO Tests configuration no AIO tool is advertised."""
     with patch(
-        "aio_tests_mcp.dependencies.get_http_request",
+        "aio_tests_mcp_server.dependencies.get_http_request",
         return_value=mock_request,
     ):
         async with Client(transport=FastMCPTransport(unconfigured_aio_mcp)) as client:

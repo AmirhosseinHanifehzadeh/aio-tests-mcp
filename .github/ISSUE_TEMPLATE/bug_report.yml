@@ -27,7 +27,7 @@ body:
     id: version
     attributes:
       label: Version
-      description: Output of `aio-tests-mcp --version`
+      description: Output of `aio-tests-mcp-server --version`
   - type: textarea
     id: logs
     attributes:

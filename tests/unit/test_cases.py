@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from aio_tests_mcp.cases import _build_step_payload, _date_criteria
+from aio_tests_mcp_server.cases import _build_step_payload, _date_criteria
 from tests.fixtures.aio_mocks import (
     MOCK_AIO_FOLDER_TREE,
     MOCK_AIO_PROJECT_CONFIG,

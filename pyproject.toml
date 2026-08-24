@@ -1,5 +1,5 @@
 [project]
-name = "aio-tests-mcp"
+name = "aio-tests-mcp-server"
 dynamic = ["version"]
 description = "Model Context Protocol (MCP) server for AIO Tests, the test management app for Jira. Lets AI assistants search, read, create and update test cases, folders and tags on Jira Cloud and Server/Data Center."
 readme = "README.md"
@@ -39,7 +39,7 @@ Repository = "https://github.com/AmirhosseinHanifehzadeh/aio-tests-mcp"
 Issues = "https://github.com/AmirhosseinHanifehzadeh/aio-tests-mcp/issues"
 
 [project.scripts]
-aio-tests-mcp = "aio_tests_mcp:main"
+aio-tests-mcp-server = "aio_tests_mcp_server:main"
 
 [build-system]
 requires = ["hatchling", "uv-dynamic-versioning>=0.7.0"]
@@ -57,7 +57,7 @@ dev = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/aio_tests_mcp"]
+packages = ["src/aio_tests_mcp_server"]
 
 [tool.hatch.version]
 source = "uv-dynamic-versioning"

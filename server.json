@@ -1,0 +1,58 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.AmirhosseinHanifehzadeh/aio-tests-mcp",
+  "title": "AIO Tests",
+  "description": "Test management in Jira via AIO Tests: search, read, create and update test cases, browse folders and tags. Supports Jira Cloud and Server/Data Center.",
+  "version": "0.1.0",
+  "repository": {
+    "url": "https://github.com/AmirhosseinHanifehzadeh/aio-tests-mcp",
+    "source": "github",
+    "id": "R_kgDOUCY0Pg"
+  },
+  "packages": [
+    {
+      "registryType": "pypi",
+      "registryBaseUrl": "https://pypi.org",
+      "identifier": "aio-tests-mcp-server",
+      "version": "0.1.0",
+      "runtimeHint": "uvx",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "AIO_API_TOKEN",
+          "description": "AIO Tests access token, generated in Jira under AIO Tests > (?) icon > API Access Token. Required for Jira Cloud; setting it alone enables the server.",
+          "isRequired": false,
+          "isSecret": true
+        },
+        {
+          "name": "AIO_ENABLED",
+          "description": "Set to 'true' to enable Jira Server/Data Center mode, where the AIO Tests API is served from your Jira base URL.",
+          "default": "false"
+        },
+        {
+          "name": "JIRA_URL",
+          "description": "Jira base URL, for Server/Data Center deployments.",
+          "isRequired": false
+        },
+        {
+          "name": "JIRA_PERSONAL_TOKEN",
+          "description": "Jira Personal Access Token, for Server/Data Center deployments.",
+          "isRequired": false,
+          "isSecret": true
+        },
+        {
+          "name": "READ_ONLY_MODE",
+          "description": "Set to 'true' to hide every write tool, so the model can read test data but never modify it.",
+          "default": "false"
+        },
+        {
+          "name": "ENABLED_TOOLS",
+          "description": "Comma-separated allowlist of tool names to expose. Defaults to all tools.",
+          "isRequired": false
+        }
+      ]
+    }
+  ]
+}

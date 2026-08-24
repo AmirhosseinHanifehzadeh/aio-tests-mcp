@@ -5,10 +5,10 @@ from unittest.mock import MagicMock, patch
 import pytest
 from starlette.requests import Request
 
-from aio_tests_mcp.config import AIOConfig
-from aio_tests_mcp.context import AppContext
-from aio_tests_mcp.dependencies import get_aio_fetcher
-from aio_tests_mcp.fetcher import AIOFetcher
+from aio_tests_mcp_server.config import AIOConfig
+from aio_tests_mcp_server.context import AppContext
+from aio_tests_mcp_server.dependencies import get_aio_fetcher
+from aio_tests_mcp_server.fetcher import AIOFetcher
 
 
 @pytest.fixture
@@ -57,7 +57,7 @@ def make_request(headers: dict[str, str] | None = None) -> MagicMock:
 async def test_uses_global_config_outside_http(global_config):
     """Outside an HTTP request the global configuration is used."""
     with patch(
-        "aio_tests_mcp.dependencies.get_http_request",
+        "aio_tests_mcp_server.dependencies.get_http_request",
         side_effect=RuntimeError("no request"),
     ):
         fetcher = await get_aio_fetcher(make_context(global_config))
@@ -70,7 +70,7 @@ async def test_uses_global_config_outside_http(global_config):
 async def test_missing_config_raises():
     """Without a configuration the tools cannot run."""
     with patch(
-        "aio_tests_mcp.dependencies.get_http_request",
+        "aio_tests_mcp_server.dependencies.get_http_request",
         side_effect=RuntimeError("no request"),
     ):
         with pytest.raises(ValueError, match="AIO Tests client"):
@@ -84,7 +84,9 @@ async def test_reuses_fetcher_from_request_state(global_config):
     request = make_request()
     request.state.aio_fetcher = existing
 
-    with patch("aio_tests_mcp.dependencies.get_http_request", return_value=request):
+    with patch(
+        "aio_tests_mcp_server.dependencies.get_http_request", return_value=request
+    ):
         fetcher = await get_aio_fetcher(make_context(global_config))
 
     assert fetcher is existing
@@ -95,7 +97,9 @@ async def test_header_token_overrides_global_token(global_config):
     """A per-request token replaces the global one."""
     request = make_request({"X-Aio-Api-Token": "user-token"})
 
-    with patch("aio_tests_mcp.dependencies.get_http_request", return_value=request):
+    with patch(
+        "aio_tests_mcp_server.dependencies.get_http_request", return_value=request
+    ):
         fetcher = await get_aio_fetcher(make_context(global_config))
 
     assert fetcher.config.api_token == "user-token"
@@ -109,7 +113,9 @@ async def test_header_token_without_global_config_raises():
     """A per-request token still needs the global URL and SSL settings."""
     request = make_request({"X-Aio-Api-Token": "user-token"})
 
-    with patch("aio_tests_mcp.dependencies.get_http_request", return_value=request):
+    with patch(
+        "aio_tests_mcp_server.dependencies.get_http_request", return_value=request
+    ):
         with pytest.raises(ValueError, match="global configuration"):
             await get_aio_fetcher(make_context(None))
 
@@ -119,7 +125,9 @@ async def test_falls_back_to_global_without_header(global_config):
     """An HTTP request without the header uses the global configuration."""
     request = make_request()
 
-    with patch("aio_tests_mcp.dependencies.get_http_request", return_value=request):
+    with patch(
+        "aio_tests_mcp_server.dependencies.get_http_request", return_value=request
+    ):
         fetcher = await get_aio_fetcher(make_context(global_config))
 
     assert fetcher.config.api_token == "global-token"

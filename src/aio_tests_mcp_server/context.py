@@ -15,7 +15,7 @@ class AppContext:
 
     Holds the global/default credentials. Per-request credentials supplied via
     the ``X-Aio-Api-Token`` header are layered on top of this in
-    :func:`aio_tests_mcp.dependencies.get_aio_fetcher`.
+    :func:`aio_tests_mcp_server.dependencies.get_aio_fetcher`.
     """
 
     full_aio_config: AIOConfig | None = None
