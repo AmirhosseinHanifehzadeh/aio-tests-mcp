@@ -281,6 +281,7 @@ class AIOTestCaseSearchResult(ApiModel):
     start_at: int = 0
     max_results: int = 0
     is_last: bool = True
+    total: int | None = None  # Matches across every page, when the API reports it
 
     @classmethod
     def from_api_response(
@@ -307,6 +308,7 @@ class AIOTestCaseSearchResult(ApiModel):
             start_at=data.get("startAt") or 0,
             max_results=data.get("maxResults") or 0,
             is_last=bool(data.get("isLast", True)),
+            total=data.get("totalCount"),
         )
 
     def to_simplified_dict(self) -> dict[str, Any]:
@@ -315,10 +317,14 @@ class AIOTestCaseSearchResult(ApiModel):
         Returns:
             Dictionary with the page of test cases and pagination metadata.
         """
-        return {
+        result: dict[str, Any] = {
             "start_at": self.start_at,
             "max_results": self.max_results,
             "count": len(self.cases),
             "is_last": self.is_last,
-            "test_cases": [case.to_simplified_dict() for case in self.cases],
         }
+        # Knowing the full match count is what lets a caller decide to paginate.
+        if self.total is not None:
+            result["total"] = self.total
+        result["test_cases"] = [case.to_simplified_dict() for case in self.cases]
+        return result

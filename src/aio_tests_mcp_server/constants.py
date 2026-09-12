@@ -49,6 +49,7 @@ RICH_TEXT_CUSTOM_FIELD_TYPE = "MULTI_LINE_TEXT"
 # they are stripped from any payload built from a previously fetched case.
 READ_ONLY_CASE_FIELDS = frozenset(
     {
+        "ID",
         "attachments",
         "createdDate",
         "descriptionAttachments",
