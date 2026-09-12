@@ -58,8 +58,27 @@ async def get_aio_fetcher(ctx: Context) -> AIOFetcher:
                     "from lifespan context."
                 )
             logger.info("Creating user-specific AIOFetcher from X-Aio-Api-Token header")
-            user_config = dataclasses.replace(
-                global_config, auth_type="token", api_token=user_token
+            # Cloud authenticates with an AIO Tests access token; Server/Data
+            # Center serves the API from Jira and authenticates with a Jira PAT.
+            # Sending the wrong scheme is rejected with a 401 either way.
+            user_config = (
+                dataclasses.replace(
+                    global_config,
+                    auth_type="token",
+                    api_token=user_token,
+                    personal_token=None,
+                    username=None,
+                    password=None,
+                )
+                if global_config.is_cloud
+                else dataclasses.replace(
+                    global_config,
+                    auth_type="pat",
+                    api_token=None,
+                    personal_token=user_token,
+                    username=None,
+                    password=None,
+                )
             )
             try:
                 user_aio_fetcher = AIOFetcher(config=user_config)
