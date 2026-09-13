@@ -7,7 +7,7 @@ import sys
 from importlib.metadata import PackageNotFoundError, version
 
 import click
-from dotenv import load_dotenv
+from dotenv import find_dotenv, load_dotenv
 
 # Fix high CPU usage on Windows: ProactorEventLoop busy-waits when combined with
 # synchronous libraries (like requests) that use select() for socket operations.
@@ -111,7 +111,13 @@ def main(
     logger = setup_logging(current_logging_level, logging_stream)
     logger.debug(f"Logging level set to: {logging.getLevelName(current_logging_level)}")
 
-    load_dotenv(env_file) if env_file else load_dotenv()
+    if env_file:
+        load_dotenv(env_file)
+    else:
+        # usecwd=True searches from the directory the server was started in.
+        # Without it python-dotenv searches upwards from this source file, which
+        # picks up an unrelated .env next to the installed package.
+        load_dotenv(find_dotenv(usecwd=True))
 
     if read_only:
         os.environ["READ_ONLY_MODE"] = "true"

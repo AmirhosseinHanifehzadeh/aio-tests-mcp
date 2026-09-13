@@ -43,6 +43,27 @@
           "isSecret": true
         },
         {
+          "name": "JIRA_USERNAME",
+          "description": "Jira username, for Server/Data Center basic authentication. Use together with JIRA_API_TOKEN, as an alternative to JIRA_PERSONAL_TOKEN.",
+          "isRequired": false
+        },
+        {
+          "name": "JIRA_API_TOKEN",
+          "description": "Jira password or API token, paired with JIRA_USERNAME for Server/Data Center basic authentication.",
+          "isRequired": false,
+          "isSecret": true
+        },
+        {
+          "name": "AIO_URL",
+          "description": "Override the AIO Tests API base URL. Defaults to the AIO Tests Cloud API, or {JIRA_URL}/rest/aio-tcms-api/1.0 on Server/Data Center.",
+          "isRequired": false
+        },
+        {
+          "name": "AIO_SSL_VERIFY",
+          "description": "Set to 'false' to skip TLS certificate verification, for a Server/Data Center instance behind a self-signed certificate. Testing only.",
+          "default": "true"
+        },
+        {
           "name": "READ_ONLY_MODE",
           "description": "Set to 'true' to hide every write tool, so the model can read test data but never modify it.",
           "default": "false"

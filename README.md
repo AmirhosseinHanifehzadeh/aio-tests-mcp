@@ -6,6 +6,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
 [![MCP](https://img.shields.io/badge/MCP-compatible-8A2BE2.svg)](https://modelcontextprotocol.io)
+[![M8ven Score](https://m8ven.ai/badge/mcp/amirhosseinhanifehzadeh-aio-tests-mcp-14rsfp)](https://m8ven.ai/mcp/amirhosseinhanifehzadeh-aio-tests-mcp-14rsfp)
 
 **An open-source [MCP server](https://modelcontextprotocol.io) for
 [AIO Tests](https://www.aiotests.com/) — test management for Jira.**
@@ -180,8 +181,8 @@ The server exposes `/mcp` and a `/healthz` endpoint for Kubernetes probes.
 
 ### Multi-tenant use
 
-One server instance can serve several users. Each client sends its own AIO Tests token
-per request, and the request is scoped to that tenant:
+One server instance can serve several users. Each client sends its own credential per
+request, and the request is scoped to that user:
 
 ```json
 {
@@ -195,6 +196,14 @@ per request, and the request is scoped to that tenant:
   }
 }
 ```
+
+The credential to send depends on the deployment the server points at — the same one you
+would put in the environment for a single-user run:
+
+| Deployment | `X-Aio-Api-Token` holds | Sent upstream as |
+| --- | --- | --- |
+| Jira Cloud | an AIO Tests access token | `Authorization: AioAuth <token>` |
+| Jira Server / Data Center | a Jira Personal Access Token | `Authorization: Bearer <token>` |
 
 `Authorization: Token <token>` works as an equivalent to the `X-Aio-Api-Token` header.
 
@@ -215,6 +224,26 @@ Run the tests:
 ```bash
 uv run pytest
 ```
+
+The suite is offline and hermetic. Unit tests cover config resolution, the client and
+every mixin; the integration tests in [`tests/integration/`](tests/integration) start the
+server as a subprocess, speak the MCP protocol to it over stdio and Streamable HTTP, and
+let it call a stateful fake of the AIO Tests REST API over loopback — so tool filtering,
+argument validation, payload building, HTTP transport and response parsing are all
+exercised for real.
+
+### Checking a real deployment
+
+To verify the tools against your own Jira, run the live check. It drives every tool
+through the MCP protocol and prints a pass/fail line for each:
+
+```bash
+uv run python scripts/live_check.py --project PROJ --env-file .env
+```
+
+It is read-only by default. Add `--write` to also exercise `aio_create_folder`,
+`aio_create_test_case` and `aio_update_test_case`; those create a timestamped folder and
+one test case, and never touch data that was already there.
 
 ---
 
