@@ -63,3 +63,28 @@ jobs:
         with:
           name: dist
           path: dist/
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the image
+        run: docker build --build-arg VERSION=0.0.0 -t aio-tests-mcp-server:ci .
+
+      # The wheel check above cannot catch a broken image layout, so the
+      # container itself has to start and answer.
+      - name: Verify the entry point runs in the image
+        run: docker run --rm --entrypoint aio-tests-mcp-server aio-tests-mcp-server:ci --version
+
+      - name: Verify the HTTP transport serves /healthz
+        run: |
+          docker run -d --name aio-ci -p 8000:8000 aio-tests-mcp-server:ci \
+            --transport streamable-http --host 0.0.0.0 --port 8000
+          for _ in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8000/healthz; then
+              echo "\nhealthy"; docker rm -f aio-ci; exit 0
+            fi
+            sleep 2
+          done
+          echo "server never became healthy"; docker logs aio-ci; docker rm -f aio-ci; exit 1

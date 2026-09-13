@@ -10,7 +10,7 @@ COPY src/ ./src/
 # The version is derived from git metadata; supply it so the build is reproducible.
 ARG VERSION=0.0.0
 ENV UV_DYNAMIC_VERSIONING_BYPASS=${VERSION}
-RUN uv sync --frozen --no-dev
+RUN uv sync --frozen --no-dev --no-editable
 
 FROM python:3.12-slim
 

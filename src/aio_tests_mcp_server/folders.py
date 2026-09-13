@@ -3,7 +3,7 @@
 import logging
 from typing import Any
 
-from .client import AIOClient
+from .client import AIOApiError, AIOClient
 from .constants import FOLDER_ENTITY_TYPES
 from .models import AIOFolder, AIOFolderTree
 
@@ -71,6 +71,9 @@ class FoldersMixin(AIOClient):
 
         Returns:
             The root folders, each carrying its descendants and full path.
+
+        Raises:
+            AIOApiError: If the project or the folder tree cannot be read.
         """
         folder_type = self._validate_folder_type(folder_type)
         cache = getattr(self, "_folder_tree_cache", None)
@@ -81,7 +84,22 @@ class FoldersMixin(AIOClient):
         if not refresh and cache_key in cache:
             return cache[cache_key]
 
-        response = self.get(self.project_path(project_key, folder_type, "folder"))
+        try:
+            response = self.get(self.project_path(project_key, folder_type, "folder"))
+        except AIOApiError as exc:
+            # Not every deployment serves every tree: Jira Server/Data Center has
+            # no /testset/folder endpoint and answers 404, which on its own reads
+            # like a missing project.
+            if exc.status_code == 404:
+                raise AIOApiError(
+                    f"Could not read the '{folder_type}' folder tree of project "
+                    f"'{project_key}': the AIO Tests API returned 404. Either the "
+                    f"project does not exist, or this deployment does not provide "
+                    f"a '{folder_type}' folder tree - Jira Server/Data Center "
+                    f"serves only 'testcase' and 'testcycle'.",
+                    status_code=404,
+                ) from exc
+            raise
         folders = [
             AIOFolderTree.from_api_response(item)
             for item in (response or [])
