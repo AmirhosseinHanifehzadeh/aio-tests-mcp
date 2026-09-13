@@ -220,6 +220,28 @@ async def test_get_folder_hierarchy_every_type(
     )
 
 
+async def test_folder_tree_missing_on_this_deployment(
+    client: Client, fake_aio: FakeAIO
+) -> None:
+    """A 404 on a folder tree explains itself instead of surfacing a bare 404.
+
+    Jira Server/Data Center has no ``/testset/folder`` endpoint, so a caller
+    following the tool description gets a 404 that looks like a missing project.
+    """
+    fake_aio.state.folders.pop("testset", None)
+    with pytest.raises(Exception) as excinfo:
+        await call(
+            client,
+            "aio_get_folder_hierarchy",
+            project_key=PROJECT_KEY,
+            folder_type="testset",
+        )
+    message = str(excinfo.value)
+    assert "testset" in message
+    assert "does not provide" in message
+    assert "testcase" in message and "testcycle" in message
+
+
 async def test_get_test_case_by_key(client: Client) -> None:
     """A case is returned in full, with HTML stripped by default."""
     case = await call(

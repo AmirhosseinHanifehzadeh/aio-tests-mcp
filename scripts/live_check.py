@@ -35,7 +35,10 @@ sys.path.insert(0, str(REPO_ROOT / "src"))
 
 from dotenv import load_dotenv  # noqa: E402
 from fastmcp import Client  # noqa: E402
-from fastmcp.client.transports import StdioTransport  # noqa: E402
+from fastmcp.client.transports import (  # noqa: E402
+    StdioTransport,
+    StreamableHttpTransport,
+)
 
 GREEN, RED, YELLOW, DIM, RESET = (
     "\033[32m",
@@ -142,6 +145,21 @@ async def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--env-file", help="Path to a .env file with the credentials")
     parser.add_argument(
+        "--url",
+        help=(
+            "Check an already-running server at this Streamable HTTP endpoint "
+            "(e.g. https://mcp.example.com/aio-tests/mcp) instead of starting "
+            "one locally. Credentials then come from that deployment."
+        ),
+    )
+    parser.add_argument(
+        "--header",
+        action="append",
+        default=[],
+        metavar="NAME:VALUE",
+        help="Extra HTTP header for --url, repeatable (e.g. X-Aio-Api-Token:abc)",
+    )
+    parser.add_argument(
         "--write",
         action="store_true",
         help="Also exercise the write tools (creates a folder and a test case)",
@@ -159,16 +177,27 @@ async def main(argv: list[str] | None = None) -> int:
     project = args.project
     report = Report()
 
-    env = dict(os.environ)
-    env["PYTHONPATH"] = str(REPO_ROOT / "src")
-    transport = StdioTransport(
-        command=sys.executable,
-        args=["-m", "aio_tests_mcp_server", "--transport", "stdio"],
-        env=env,
-        cwd=str(REPO_ROOT),
-    )
+    transport: StdioTransport | StreamableHttpTransport
+    if args.url:
+        headers = {}
+        for raw in args.header:
+            name, _, value = raw.partition(":")
+            if not value:
+                parser.error(f"--header expects NAME:VALUE, got {raw!r}")
+            headers[name.strip()] = value.strip()
+        transport = StreamableHttpTransport(url=args.url, headers=headers or None)
+        target = args.url
+    else:
+        env = dict(os.environ)
+        env["PYTHONPATH"] = str(REPO_ROOT / "src")
+        transport = StdioTransport(
+            command=sys.executable,
+            args=["-m", "aio_tests_mcp_server", "--transport", "stdio"],
+            env=env,
+            cwd=str(REPO_ROOT),
+        )
+        target = os.getenv("AIO_URL") or os.getenv("JIRA_URL") or "AIO Tests Cloud"
 
-    target = os.getenv("AIO_URL") or os.getenv("JIRA_URL") or "AIO Tests Cloud"
     print("\nAIO Tests MCP live check")
     print(f"  target   {target}")
     print(f"  project  {project}")
