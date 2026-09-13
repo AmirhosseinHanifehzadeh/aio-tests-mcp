@@ -1,6 +1,6 @@
 """Models for AIO Tests test cases."""
 
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from typing import Any
 
 from pydantic import field_validator
@@ -162,7 +162,7 @@ class AIOTestCase(ApiModel):
         """
         if isinstance(value, bool) or not isinstance(value, (int, float)):
             return value
-        return datetime.fromtimestamp(value / 1000, tz=UTC).isoformat(
+        return datetime.fromtimestamp(value / 1000, tz=timezone.utc).isoformat(
             timespec="milliseconds"
         )
 
