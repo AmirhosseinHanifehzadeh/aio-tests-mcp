@@ -5,6 +5,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from aio_tests_mcp_server.cases import _build_step_payload, _date_criteria
+from aio_tests_mcp_server.models.case import AIOTestCase
 from tests.fixtures.aio_mocks import (
     MOCK_AIO_FOLDER_TREE,
     MOCK_AIO_PROJECT_CONFIG,
@@ -603,3 +604,25 @@ class TestUpdateTestCase:
 
         with pytest.raises(ValueError, match="was not found"):
             aio_fetcher.update_test_case("PROJ", "AT-TC-99", priority="Medium")
+
+
+class TestTimestampNormalization:
+    """Tests for the date fields the API returns as epoch milliseconds."""
+
+    def test_epoch_millis_become_iso_strings(self):
+        case = AIOTestCase.from_api_response(
+            {"createdDate": 1748777458968, "updatedDate": 1781675791785}
+        )
+        assert case.created_date == "2025-06-01T11:30:58.968+00:00"
+        assert case.updated_date == "2026-06-17T05:56:31.785+00:00"
+
+    def test_iso_strings_are_left_alone(self):
+        case = AIOTestCase.from_api_response(
+            {"createdDate": "2026-01-05T10:00:00.000Z"}
+        )
+        assert case.created_date == "2026-01-05T10:00:00.000Z"
+
+    def test_missing_dates_stay_none(self):
+        case = AIOTestCase.from_api_response({})
+        assert case.created_date is None
+        assert case.updated_date is None
