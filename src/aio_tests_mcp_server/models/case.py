@@ -1,6 +1,9 @@
 """Models for AIO Tests test cases."""
 
+from datetime import datetime, timezone
 from typing import Any
+
+from pydantic import field_validator
 
 from .base import ApiModel
 from .common import AIOEntity, AIOFolder, AIOTag
@@ -141,6 +144,27 @@ class AIOTestCase(ApiModel):
     created_date: str | None = None
     updated_date: str | None = None
     is_archived: bool | None = None
+
+    @field_validator("created_date", "updated_date", mode="before")
+    @classmethod
+    def _normalize_timestamp(cls, value: Any) -> Any:
+        """Accept the epoch milliseconds the API sends for date fields.
+
+        AIO Tests returns ``createdDate`` and ``updatedDate`` as integer epoch
+        milliseconds, not as the ISO 8601 strings the field type suggests.
+        Convert them so the parsed value is always an ISO 8601 string.
+
+        Args:
+            value: Raw date value from the API.
+
+        Returns:
+            An ISO 8601 string for numeric input, the value unchanged otherwise.
+        """
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            return value
+        return datetime.fromtimestamp(value / 1000, tz=timezone.utc).isoformat(
+            timespec="milliseconds"
+        )
 
     @classmethod
     def from_api_response(cls, data: dict[str, Any], **kwargs: Any) -> "AIOTestCase":
