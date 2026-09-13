@@ -260,8 +260,9 @@ async def main(argv: list[str] | None = None) -> int:
         await run_check(report, "aio_get_tags", check_tags)
 
         for folder_type in ("testcase", "testcycle", "testset"):
-
-            async def check_folders(folder_type: str = folder_type) -> str:
+            name = f"aio_get_folder_hierarchy [{folder_type}]"
+            started = time.monotonic()
+            try:
                 data = decode(
                     await client.call_tool(
                         "aio_get_folder_hierarchy",
@@ -272,12 +273,27 @@ async def main(argv: list[str] | None = None) -> int:
                         },
                     )
                 )
-                folders = data.get("folders", [])
-                sample = ", ".join(str(f.get("path")) for f in folders[:3])
-                return f"{len(folders)} folders{f' ({sample}...)' if sample else ''}"
-
-            await run_check(
-                report, f"aio_get_folder_hierarchy [{folder_type}]", check_folders
+            except Exception as exc:  # noqa: BLE001
+                message = str(exc)
+                # Not every deployment serves every tree, so a tree this one does
+                # not have is a fact about the deployment, not a broken tool.
+                status = "skip" if "does not provide" in message else "fail"
+                detail = (
+                    f"this deployment has no '{folder_type}' folder tree"
+                    if status == "skip"
+                    else f"{type(exc).__name__}: {message}"
+                )
+                report.record(Outcome(name, status, detail, time.monotonic() - started))
+                continue
+            folders = data.get("folders", [])
+            sample = ", ".join(str(f.get("path")) for f in folders[:3])
+            report.record(
+                Outcome(
+                    name,
+                    "pass",
+                    f"{len(folders)} folders{f' ({sample}...)' if sample else ''}",
+                    time.monotonic() - started,
+                )
             )
 
         sample_key: str | None = None
