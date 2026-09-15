@@ -3,7 +3,7 @@
   "name": "io.github.AmirhosseinHanifehzadeh/aio-tests-mcp",
   "title": "AIO Tests",
   "description": "Test management in Jira via AIO Tests: search, read, create and update test cases, browse folders and tags. Supports Jira Cloud and Server/Data Center.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "repository": {
     "url": "https://github.com/AmirhosseinHanifehzadeh/aio-tests-mcp",
     "source": "github",
@@ -14,7 +14,7 @@
       "registryType": "pypi",
       "registryBaseUrl": "https://pypi.org",
       "identifier": "aio-tests-mcp-server",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "runtimeHint": "uvx",
       "transport": {
         "type": "stdio"
