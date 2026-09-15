@@ -20,6 +20,10 @@ WORKDIR /app
 COPY --from=builder --chown=app:app /app/.venv /app/.venv
 ENV PATH="/app/.venv/bin:$PATH"
 
+# Baked in so /healthz can report which build is actually serving.
+ARG GIT_COMMIT=""
+ENV AIO_GIT_COMMIT=${GIT_COMMIT}
+
 USER app
 EXPOSE 8000
 

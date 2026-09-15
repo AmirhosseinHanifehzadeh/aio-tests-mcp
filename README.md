@@ -247,6 +247,42 @@ one test case, and never touch data that was already there.
 
 ---
 
+## Deploying with Docker
+
+Every merge to `main` publishes an image to the GitHub Container Registry, tagged
+`latest` and with the commit SHA:
+
+```bash
+docker pull ghcr.io/amirhosseinhanifehzadeh/aio-tests-mcp:latest
+```
+
+Pin the SHA tag in production so a rollout is explicit about what it ships.
+
+```bash
+docker run -d -p 8000:8000 -e AIO_API_TOKEN=... \
+  ghcr.io/amirhosseinhanifehzadeh/aio-tests-mcp:latest
+```
+
+### Confirming which build is live
+
+`/healthz` reports the version and the commit the image was built from, so a
+deployment can be checked from outside without guessing:
+
+```bash
+curl -s http://your-host/healthz
+```
+
+```json
+{"status": "ok", "version": "0.1.0", "commit": "f162688..."}
+```
+
+If `commit` does not match what you expect to have deployed, the rollout pulled a
+stale image — restarting the container will not help, because the image itself is
+the old build. `commit` is absent only for images built without the `GIT_COMMIT`
+build argument.
+
+---
+
 ## Limitations
 
 - **Folder rename, move and delete are not implemented.** The AIO Tests public API

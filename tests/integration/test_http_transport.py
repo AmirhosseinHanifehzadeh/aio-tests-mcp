@@ -22,6 +22,9 @@ import pytest_asyncio
 from fastmcp import Client
 from fastmcp.client.transports import StreamableHttpTransport
 
+from aio_tests_mcp_server import __version__
+from aio_tests_mcp_server.app import health_check
+
 from .conftest import PROJECT_KEY, server_env
 from .fake_aio_server import FakeAIO
 
@@ -108,10 +111,30 @@ async def call(client: Client, tool: str, **arguments: Any) -> Any:
 
 
 async def test_health_endpoint(http_server: str) -> None:
-    """The health probe reports the server as up."""
+    """The health probe reports the server as up, and which build is serving."""
     response = httpx.get(http_server.replace("/mcp", "/healthz"), timeout=10)
     assert response.status_code == 200
-    assert response.json() == {"status": "ok"}
+    body = response.json()
+    assert body["status"] == "ok"
+    assert body["version"] == __version__
+
+
+async def test_health_endpoint_reports_the_build_commit(
+    http_server: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The commit is reported when the image was built with one."""
+    monkeypatch.setenv("AIO_GIT_COMMIT", "abc123")
+    response = await health_check(None)  # type: ignore[arg-type]
+    assert json.loads(response.body)["commit"] == "abc123"
+
+
+async def test_health_endpoint_omits_an_unknown_commit(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A build without commit metadata simply omits the field."""
+    monkeypatch.delenv("AIO_GIT_COMMIT", raising=False)
+    response = await health_check(None)  # type: ignore[arg-type]
+    assert "commit" not in json.loads(response.body)
 
 
 async def test_tools_work_over_http(http_client: Client) -> None:
