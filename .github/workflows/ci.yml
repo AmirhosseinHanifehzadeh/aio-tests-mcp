@@ -66,25 +66,61 @@ jobs:
 
   docker:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     steps:
       - uses: actions/checkout@v4
 
       - name: Build the image
-        run: docker build --build-arg VERSION=0.0.0 -t aio-tests-mcp-server:ci .
+        run: |
+          docker build \
+            --build-arg VERSION=0.0.0 \
+            --build-arg GIT_COMMIT=${{ github.sha }} \
+            -t aio-tests-mcp-server:ci .
 
       # The wheel check above cannot catch a broken image layout, so the
       # container itself has to start and answer.
       - name: Verify the entry point runs in the image
         run: docker run --rm --entrypoint aio-tests-mcp-server aio-tests-mcp-server:ci --version
 
+      # A redeploy is only verifiable if the running image says which build it
+      # is, so assert that the commit really survives into the container.
       - name: Verify the HTTP transport serves /healthz
         run: |
           docker run -d --name aio-ci -p 8000:8000 aio-tests-mcp-server:ci \
             --transport streamable-http --host 0.0.0.0 --port 8000
           for _ in $(seq 1 30); do
-            if curl -fsS http://127.0.0.1:8000/healthz; then
-              echo "\nhealthy"; docker rm -f aio-ci; exit 0
+            if body=$(curl -fsS http://127.0.0.1:8000/healthz); then
+              echo "healthz: $body"
+              reported=$(echo "$body" | jq -r .commit)
+              if [ "$reported" != "${{ github.sha }}" ]; then
+                echo "expected commit ${{ github.sha }}, got $reported"
+                docker rm -f aio-ci; exit 1
+              fi
+              echo "healthy, reporting the build it was made from"
+              docker rm -f aio-ci; exit 0
             fi
             sleep 2
           done
           echo "server never became healthy"; docker logs aio-ci; docker rm -f aio-ci; exit 1
+
+      # Without this, merging to main produces nothing deployable and a
+      # redeploy just re-pulls the previous image.
+      - name: Log in to the container registry
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish the image
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          image="ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')"
+          docker tag aio-tests-mcp-server:ci "$image:latest"
+          docker tag aio-tests-mcp-server:ci "$image:${{ github.sha }}"
+          docker push "$image:latest"
+          docker push "$image:${{ github.sha }}"
+          echo "published $image:latest and $image:${{ github.sha }}"

@@ -2,6 +2,7 @@
 
 import json
 import logging
+import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Any, Literal, Optional
@@ -15,6 +16,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
+from . import __version__
 from .config import AIOConfig, is_aio_enabled
 from .context import AppContext
 from .server import aio_mcp
@@ -26,15 +28,23 @@ logger = logging.getLogger("aio-tests-mcp.app")
 
 
 async def health_check(request: Request) -> JSONResponse:
-    """Report server liveness.
+    """Report server liveness and the build that is serving.
+
+    The build fields make a deployment verifiable from the outside: without
+    them a redeployed server is indistinguishable from a stale one.
 
     Args:
         request: The incoming HTTP request.
 
     Returns:
-        A JSON response with an ``ok`` status.
+        A JSON response with an ``ok`` status, the package version and, when
+        the image was built with it, the commit the build came from.
     """
-    return JSONResponse({"status": "ok"})
+    body: dict[str, str] = {"status": "ok", "version": __version__}
+    commit = os.getenv("AIO_GIT_COMMIT")
+    if commit:
+        body["commit"] = commit
+    return JSONResponse(body)
 
 
 @asynccontextmanager
