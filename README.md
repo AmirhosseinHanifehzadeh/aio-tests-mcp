@@ -263,6 +263,9 @@ docker run -d -p 8000:8000 -e AIO_API_TOKEN=... \
   ghcr.io/amirhosseinhanifehzadeh/aio-tests-mcp:latest
 ```
 
+To build and roll out on a host that already runs Traefik, with a health-checked
+rollout and rollback, see [`deploy/traefik/`](deploy/traefik/README.md).
+
 ### Confirming which build is live
 
 `/healthz` reports the version and the commit the image was built from, so a
