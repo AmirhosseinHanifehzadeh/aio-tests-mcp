@@ -1,0 +1,61 @@
+# AIO Tests MCP server behind an existing Traefik, served at
+# http://$MCP_HOST$PATH_PREFIX/mcp
+#
+# Its own compose project, so it has an independent lifecycle from whatever else
+# runs on the host. It joins Traefik's external network and is routed by host
+# and path prefix, with the prefix stripped before it reaches the server.
+#
+# Every host-specific value comes from the .env beside this file, which is not
+# tracked (see .env.example). Roll out with deploy.sh: it builds the image and
+# records its tag in that same .env. See README.md.
+
+name: aio-tests-mcp
+
+services:
+  mcp-aio-tests:
+    mem_limit: 512m
+    image: aio-tests-mcp-server:${IMAGE_TAG:?run deploy.sh, which builds the image and sets IMAGE_TAG}
+    # Built on this host and never pushed, so a missing tag is an error, not a pull.
+    pull_policy: never
+    container_name: mcp-aio-tests
+    env_file:
+      # JIRA_URL and JIRA_PERSONAL_TOKEN (or whatever credentials the Jira
+      # deployment uses); see .env.example in the repository root.
+      - ${JIRA_ENV_FILE:?set JIRA_ENV_FILE in .env}
+    # These win over anything the env file above sets.
+    environment:
+      # Empty means Server/Data Center mode: the AIO Tests API is served from the
+      # Jira base URL and reuses the Jira credentials.
+      AIO_ENABLED: "true"
+      AIO_API_TOKEN: ${AIO_API_TOKEN:-}
+      # Empty means "expose every tool".
+      ENABLED_TOOLS: ${ENABLED_TOOLS:-}
+      # Set to true to hide every write tool, leaving only the read tools.
+      READ_ONLY_MODE: ${READ_ONLY_MODE:-false}
+      MCP_VERBOSE: "false"
+    command: ["--transport", "streamable-http", "--port", "9000", "-v"]
+    restart: unless-stopped
+    networks:
+      - traefik
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import urllib.request; urllib.request.urlopen('http://127.0.0.1:9000/healthz', timeout=5)
+      interval: 30s
+      timeout: 10s
+      start_period: 15s
+      retries: 3
+    labels:
+      - traefik.http.services.mcp-aio-tests.loadbalancer.server.port=9000
+      - traefik.http.routers.mcp-aio-tests.entrypoints=${TRAEFIK_ENTRYPOINT:-web}
+      - traefik.http.routers.mcp-aio-tests.rule=Host(`${MCP_HOST:?set MCP_HOST in .env}`) && PathPrefix(`${PATH_PREFIX:-/aio-tests}`)
+      - traefik.http.middlewares.mcp-aio-tests-strip.stripprefix.prefixes=${PATH_PREFIX:-/aio-tests}
+      - traefik.http.routers.mcp-aio-tests.middlewares=mcp-aio-tests-strip
+      - traefik.http.routers.mcp-aio-tests.service=mcp-aio-tests
+
+networks:
+  traefik:
+    external: true
+    name: ${TRAEFIK_NETWORK:?set TRAEFIK_NETWORK in .env}
