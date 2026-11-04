@@ -7,8 +7,12 @@ from typing import Annotated, Any
 from fastmcp import Context, FastMCP
 from pydantic import Field
 
+from .client import AIOApiError
 from .constants import DEFAULT_PAGE_SIZE, FOLDER_ENTITY_TYPES
 from .dependencies import get_aio_fetcher
+from .exceptions import AIOAuthenticationError
+from .fetcher import AIOFetcher
+from .models import AIOTestCase
 from .utils.decorators import check_write_access
 
 logger = logging.getLogger(__name__)
@@ -70,6 +74,52 @@ def _dumps(payload: Any) -> str:
         The indented JSON representation.
     """
     return json.dumps(payload, indent=2, ensure_ascii=False)
+
+
+def _confirm_saved_steps(
+    aio: AIOFetcher,
+    project_key: str,
+    case: AIOTestCase,
+    sent: int,
+    *,
+    include_rtf: bool,
+) -> tuple[AIOTestCase, str | None]:
+    """Check that a newly created case kept the steps it was created with.
+
+    Some Server/DC deployments accept a new case but silently discard its
+    steps. A create response may also just leave them out, so the saved case is
+    read back before concluding anything.
+
+    Args:
+        aio: The AIO Tests fetcher.
+        project_key: Jira project key or numeric project ID.
+        case: The case the create call returned.
+        sent: Number of steps the case was created with.
+        include_rtf: Keep the HTML markup of rich-text fields on read-back.
+
+    Returns:
+        The most complete view of the case, and a warning when fewer steps
+        were saved than sent, or when that could not be confirmed.
+    """
+    case_id = case.key or (str(case.id) if case.id is not None else None)
+    if len(case.steps) >= sent or case_id is None:
+        return case, None
+    try:
+        case = aio.get_test_case(project_key, case_id, include_rtf=include_rtf)
+    except (AIOApiError, AIOAuthenticationError) as exc:
+        logger.warning(f"Could not read back {case_id} to confirm its steps: {exc}")
+        return case, (
+            f"AIO Tests created {case_id}, but it could not be read back to confirm "
+            f"its {sent} steps were saved. Check the case before relying on them."
+        )
+    if len(case.steps) >= sent:
+        return case, None
+    logger.warning(f"AIO Tests saved {len(case.steps)} of {sent} steps on {case_id}")
+    return case, (
+        f"AIO Tests created {case_id} but saved {len(case.steps)} of the {sent} "
+        "steps sent; this deployment appears to discard steps on create. The case "
+        "exists, so do not create it again: add the missing steps to it instead."
+    )
 
 
 @aio_mcp.tool(
@@ -424,7 +474,8 @@ async def create_test_case(
         create_folder_if_missing: Create the target folder when it is missing.
 
     Returns:
-        JSON string with the created test case.
+        JSON string with the created test case, plus ``warnings`` when the
+        deployment did not keep every step.
     """
     aio = await get_aio_fetcher(ctx)
     payload: dict[str, Any] = dict(fields or {})
@@ -438,7 +489,13 @@ async def create_test_case(
         create_folder_if_missing=create_folder_if_missing,
         **payload,
     )
-    return _dumps({"success": True, "test_case": case.to_simplified_dict()})
+    case, warning = _confirm_saved_steps(
+        aio, project_key, case, len(steps or []), include_rtf=include_rtf
+    )
+    result: dict[str, Any] = {"success": True, "test_case": case.to_simplified_dict()}
+    if warning:
+        result["warnings"] = [warning]
+    return _dumps(result)
 
 
 @aio_mcp.tool(

@@ -292,6 +292,10 @@ build argument.
   exposes no endpoint for them.
 - **Test cycles and test runs are not covered yet.** The current tool set is scoped to
   test case management — cases, folders, tags and project schema. Contributions welcome.
+- **Some Server/DC installs save a new case without its steps.** The API accepts the
+  case and reports success, but drops `steps`. `aio_create_test_case` reads the case
+  back when the steps are missing and adds a `warnings` entry to its result if they
+  were not saved. The case still exists, so a client should not create it again.
 
 ---
 

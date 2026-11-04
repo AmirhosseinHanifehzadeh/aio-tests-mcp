@@ -696,6 +696,46 @@ async def test_create_test_case_creates_missing_tags(
     ]
 
 
+async def test_create_test_case_keeps_its_steps_without_a_warning(
+    client: Client, fake_aio: FakeAIO
+) -> None:
+    """A deployment that saves the steps gets a plain success."""
+    result = await call(
+        client,
+        "aio_create_test_case",
+        project_key=PROJECT_KEY,
+        title="Saved with steps",
+        steps=[{"step": "Open the page"}, {"step": "Submit the form"}],
+    )
+
+    assert "warnings" not in result
+    assert len(result["test_case"]["steps"]) == 2
+
+
+async def test_create_test_case_reports_steps_the_deployment_dropped(
+    client: Client, fake_aio: FakeAIO
+) -> None:
+    """A case saved without its steps comes back with a warning, not a silent ok."""
+    fake_aio.drop_steps_on_create = True
+
+    result = await call(
+        client,
+        "aio_create_test_case",
+        project_key=PROJECT_KEY,
+        title="Steps get lost",
+        steps=[{"step": "Open the page"}, {"step": "Submit the form"}],
+    )
+
+    key = result["test_case"]["key"]
+    assert result["success"] is True
+    assert "steps" not in result["test_case"]
+    [warning] = result["warnings"]
+    assert key in warning
+    assert "0 of the 2 steps" in warning
+    # The saved case was read back before concluding the steps were lost.
+    assert last_request(fake_aio, "GET", f"/testcase/{key}/detail")
+
+
 async def test_create_test_case_creates_a_missing_folder(
     client: Client, fake_aio: FakeAIO
 ) -> None:

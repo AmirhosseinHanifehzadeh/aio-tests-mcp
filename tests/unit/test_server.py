@@ -13,6 +13,7 @@ from fastmcp.exceptions import ToolError
 from starlette.requests import Request
 
 from aio_tests_mcp_server.app import AIOTestsMCP
+from aio_tests_mcp_server.client import AIOApiError
 from aio_tests_mcp_server.config import AIOConfig
 from aio_tests_mcp_server.context import AppContext
 from aio_tests_mcp_server.fetcher import AIOFetcher
@@ -373,6 +374,105 @@ async def test_create_test_case_ignores_duplicate_title_field(
     args, kwargs = mock_aio_fetcher.create_test_case.call_args
     assert args == ("PROJ", "Real title")
     assert "title" not in kwargs
+
+
+@pytest.mark.anyio
+async def test_create_test_case_trusts_a_response_with_every_step(
+    aio_client, mock_aio_fetcher
+):
+    """A response that carries the steps needs no read-back and no warning."""
+    content = parse(
+        await aio_client.call_tool(
+            "aio_create_test_case",
+            {
+                "project_key": "PROJ",
+                "title": "New case",
+                "steps": [{"step": "Login"}, {"step": "Logout"}],
+            },
+        )
+    )
+
+    assert content["success"] is True
+    assert "warnings" not in content
+    mock_aio_fetcher.get_test_case.assert_not_called()
+
+
+@pytest.mark.anyio
+async def test_create_test_case_reads_back_steps_missing_from_the_response(
+    aio_client, mock_aio_fetcher
+):
+    """Steps absent from the create response are looked for in the saved case."""
+    mock_aio_fetcher.create_test_case.return_value = AIOTestCase.from_api_response(
+        {**MOCK_AIO_TEST_CASE, "steps": []}
+    )
+
+    content = parse(
+        await aio_client.call_tool(
+            "aio_create_test_case",
+            {
+                "project_key": "PROJ",
+                "title": "New case",
+                "steps": [{"step": "Login"}, {"step": "Logout"}],
+            },
+        )
+    )
+
+    assert content["success"] is True
+    assert "warnings" not in content
+    assert len(content["test_case"]["steps"]) == 2
+    args, _ = mock_aio_fetcher.get_test_case.call_args
+    assert args == ("PROJ", "AT-TC-17")
+
+
+@pytest.mark.anyio
+async def test_create_test_case_warns_when_the_steps_were_dropped(
+    aio_client, mock_aio_fetcher
+):
+    """A case saved without its steps is reported, not passed off as complete."""
+    without_steps = AIOTestCase.from_api_response({**MOCK_AIO_TEST_CASE, "steps": []})
+    mock_aio_fetcher.create_test_case.return_value = without_steps
+    mock_aio_fetcher.get_test_case.return_value = without_steps
+
+    content = parse(
+        await aio_client.call_tool(
+            "aio_create_test_case",
+            {
+                "project_key": "PROJ",
+                "title": "New case",
+                "steps": [{"step": "Login"}, {"step": "Logout"}],
+            },
+        )
+    )
+
+    # The case exists, so success stays true: a retry would only duplicate it.
+    assert content["success"] is True
+    assert "steps" not in content["test_case"]
+    [warning] = content["warnings"]
+    assert "AT-TC-17" in warning
+    assert "0 of the 2 steps" in warning
+
+
+@pytest.mark.anyio
+async def test_create_test_case_warns_when_the_steps_cannot_be_confirmed(
+    aio_client, mock_aio_fetcher
+):
+    """A failed read-back leaves the case created and says what is unknown."""
+    mock_aio_fetcher.create_test_case.return_value = AIOTestCase.from_api_response(
+        {**MOCK_AIO_TEST_CASE, "steps": []}
+    )
+    mock_aio_fetcher.get_test_case.side_effect = AIOApiError("boom", status_code=500)
+
+    content = parse(
+        await aio_client.call_tool(
+            "aio_create_test_case",
+            {"project_key": "PROJ", "title": "New case", "steps": [{"step": "Login"}]},
+        )
+    )
+
+    assert content["success"] is True
+    [warning] = content["warnings"]
+    assert "AT-TC-17" in warning
+    assert "could not be read back" in warning
 
 
 @pytest.mark.anyio
