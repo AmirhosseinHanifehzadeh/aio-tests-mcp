@@ -353,6 +353,8 @@ class FakeAIO:
         self.requests: list[dict[str, Any]] = []
         self.expected_token = "fake-token"
         self.expected_scheme = "Bearer"
+        # Some Server/DC installs accept a new case but discard its steps.
+        self.drop_steps_on_create = False
 
         fake = self
 
@@ -428,6 +430,7 @@ class FakeAIO:
         """Restore the seeded state and clear the recorded requests."""
         self.state = _fresh_state()
         self.requests.clear()
+        self.drop_steps_on_create = False
 
     def dispatch(
         self,
@@ -641,6 +644,8 @@ class FakeAIO:
         payload = self._name_folders(_resolve_lookups(dict(body or {})))
         if not payload.get("title"):
             raise FakeAIOError(400, "title is required")
+        if self.drop_steps_on_create:
+            payload.pop("steps", None)
         case = _seed_case(self.state, **payload)
         return 200, _render_case(case, rtf=rtf)
 
